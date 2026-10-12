@@ -1,0 +1,4 @@
+blockExoticSubdeps: false
+allowBuilds:
+  esbuild: true
+  msgpackr-extract: true

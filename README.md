@@ -1,12 +1,13 @@
 # RHUL Club Penguin
+
 Club Penguin, but with the Royal Holloway, University of London Campus instead. Why? Because we can.
 
 Original idea by cattywat from the RHUL CompSoc Discord.
 
 ## To Do
 
-- [X] Decide on a Tech Stack
-- [X] Design an Architecture
+- [x] Decide on a Tech Stack
+- [x] Design an Architecture
 - [ ] Build the damn thing
 
 ## Requirements

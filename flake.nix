@@ -13,7 +13,7 @@
       devShells.${system}.default = pkgs.mkShell {
         buildInputs = with pkgs; [
           nodejs_24
-          pnpm_11
+          pnpm_12
         ];
         shellHook = ''
           echo "Node $(node --version) / PNPM $(pnpm --version)"

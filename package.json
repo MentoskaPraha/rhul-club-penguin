@@ -1,0 +1,39 @@
+{
+  "name": "rhul-club-penguin",
+  "description": "Club Penguin, but with the Royal Holloway, University of London Campus instead. Why? Because we can.",
+  "author": "MentoskaPraha",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "fix": "eslint . --fix",
+    "format": "prettier . --write",
+    "check": "prettier --check . && eslint ."
+  },
+  "engines": {
+    "node": ">= 24.0.0"
+  },
+  "dependencies": {
+    "@colyseus/schema": "^5.0.36",
+    "@colyseus/tools": "^0.18.9",
+    "colyseus": "^0.18.9",
+    "express": "^5.3.0",
+    "phaser": "^4.0.0",
+    "terser": "^5.39.0"
+  },
+  "devDependencies": {
+    "@colyseus/sdk": "^0.18.5",
+    "@eslint/js": "^10.0.1",
+    "@types/express": "^5.0.6",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.71.1",
+    "vite": "^6.3.1"
+  }
+}
