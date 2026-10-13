@@ -22,7 +22,7 @@ export class GameOver extends Scene {
       color: "#ffffff",
       stroke: "#000000",
       strokeThickness: 8,
-      align: "center"
+      align: "center",
     });
     this.gameover_text.setOrigin(0.5);
 

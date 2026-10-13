@@ -7,14 +7,26 @@ import tseslint from "typescript-eslint";
 export default defineConfig([
   globalIgnores(["**/dist/**", "**/node_modules/**"]),
   js.configs.recommended,
-  tseslint.configs.recommended,
+  tseslint.configs.recommendedTypeChecked,
+  {
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
   {
     files: ["src/client/**/*.ts"],
-    languageOptions: { globals: globals.browser }
+    languageOptions: { globals: globals.browser },
   },
   {
-    files: ["src/server/**/*.ts"],
-    languageOptions: { globals: globals.node }
+    files: ["src/server/**/*.ts", "vite.config.ts"],
+    languageOptions: { globals: globals.node },
   },
-  prettier
+  {
+    files: ["**/*.js"],
+    extends: [tseslint.configs.disableTypeChecked],
+  },
+  prettier,
 ]);

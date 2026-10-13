@@ -7,7 +7,7 @@
   "jsxSingleQuote": false,
   "quoteProps": "as-needed",
   "bracketSameLine": false,
-  "trailingComma": "none",
+  "trailingComma": "all",
 
   "plugins": [],
   "overrides": []

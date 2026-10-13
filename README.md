@@ -4,12 +4,6 @@ Club Penguin, but with the Royal Holloway, University of London Campus instead. 
 
 Original idea by cattywat from the RHUL CompSoc Discord.
 
-## To Do
-
-- [x] Decide on a Tech Stack
-- [x] Design an Architecture
-- [ ] Build the damn thing
-
 ## Requirements
 
 1. [ ] Users connect and join the game through the browser.

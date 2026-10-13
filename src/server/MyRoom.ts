@@ -6,7 +6,7 @@ export class MyRoom extends Room {
   messages = {
     yourMessageType: (client: Client, message: any) => {
       console.log(client.sessionId, "sent a message:", message);
-    }
+    },
   };
 
   onCreate(_options: any) {
