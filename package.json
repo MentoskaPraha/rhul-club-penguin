@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build --app",
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "fix": "eslint . --fix",
