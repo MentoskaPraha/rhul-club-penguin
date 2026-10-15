@@ -1,26 +1,9 @@
-import {
-  defineServer,
-  defineRoom,
-  createRouter,
-  createEndpoint,
-} from "colyseus";
-import { MyRoom } from "./MyRoom";
+import { defineServer, defineRoom } from "colyseus";
+import { GameRoom } from "@server/GameRoom";
 
-export const server = defineServer({
+const server = defineServer({
   rooms: {
-    my_room: defineRoom(MyRoom),
-  },
-
-  // Type-safe HTTP routes, hot-swapped on reload
-  routes: createRouter({
-    hello: createEndpoint("/hello", { method: "GET" }, async () => {
-      return { message: "Hello world!" };
-    }),
-  }),
-
-  express: (app) => {
-    app.get("/express-hello", (_req, res) => {
-      res.json({ message: "Hello from Express!" });
-    });
+    game: defineRoom(GameRoom),
   },
 });
+export default server;

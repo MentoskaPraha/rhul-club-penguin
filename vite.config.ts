@@ -1,4 +1,5 @@
 import { colyseus } from "colyseus/vite";
+import path from "node:path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
@@ -25,6 +26,12 @@ export default defineConfig({
       format: {
         comments: false,
       },
+    },
+  },
+  resolve: {
+    alias: {
+      "@client": path.resolve(__dirname, "src/client"),
+      "@server": path.resolve(__dirname, "src/server"),
     },
   },
   environments: {
