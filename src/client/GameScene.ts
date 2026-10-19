@@ -15,7 +15,11 @@ export class GameScene extends Phaser.Scene {
 
   currentPlayer: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
   playerEntities: {
-    [sessionId: string]: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
+    [sessionId: string]: {
+      entity: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
+      serverX: number;
+      serverY: number;
+    };
   } = {};
 
   cursorKeys: Phaser.Types.Input.Keyboard.CursorKeys | undefined;
@@ -49,19 +53,24 @@ export class GameScene extends Phaser.Scene {
 
     callbacks.onAdd("players", (player, sessionId) => {
       const entity = this.physics.add.image(player.x, player.y, "ship_0001");
-      this.playerEntities[sessionId] = entity;
+      const playerEntity = {
+        entity: entity,
+        serverX: player.x,
+        serverY: player.y,
+      };
+      this.playerEntities[sessionId] = playerEntity;
       if (sessionId == this.room.sessionId) {
         this.currentPlayer = entity;
       } else {
         callbacks.onChange(player, () => {
-          entity.setData("serverX", player.x);
-          entity.setData("serverY", player.y);
+          playerEntity.serverX = player.x;
+          playerEntity.serverY = player.y;
         });
       }
     });
 
     callbacks.onRemove("players", (_, sessionId) => {
-      const entity = this.playerEntities[sessionId];
+      const entity = this.playerEntities[sessionId].entity;
       if (entity) {
         entity.destroy();
         delete this.playerEntities[sessionId];
@@ -133,9 +142,7 @@ export class GameScene extends Phaser.Scene {
         continue;
       }
 
-      const entity = this.playerEntities[sessionId];
-      const { serverX, serverY } = entity.data.values;
-
+      const { entity, serverX, serverY } = this.playerEntities[sessionId];
       entity.x = Phaser.Math.Linear(entity.x, serverX, 0.2);
       entity.y = Phaser.Math.Linear(entity.y, serverY, 0.2);
     }
