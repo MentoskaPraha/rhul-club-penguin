@@ -1,5 +1,11 @@
 import { Room, Client, CloseCode } from "colyseus";
 import { schema, SchemaType, t } from "@colyseus/schema";
+import {
+  FixedTimestep,
+  Velocity,
+  GameMapWidth,
+  GameMapHeight,
+} from "@common/constants";
 
 export interface InputData {
   left: boolean;
@@ -25,8 +31,8 @@ export type Player = SchemaType<typeof Player>;
 
 export const GameRoomState = schema(
   {
-    mapWidth: t.number().default(1024),
-    mapHeight: t.number().default(768),
+    mapWidth: t.number().default(GameMapWidth),
+    mapHeight: t.number().default(GameMapHeight),
     players: t.map(Player),
   },
   "GameRoomState",
@@ -35,10 +41,9 @@ export type GameRoomState = SchemaType<typeof GameRoomState>;
 
 export class GameRoom extends Room {
   state = new GameRoomState();
-  fixedTimeStep = 1000 / 60;
 
   messages = {
-    0: (client: Client, input: InputData) => {
+    move: (client: Client, input: InputData) => {
       const player = this.state.players.get(client.sessionId);
       if (player == undefined) {
         client.leave(CloseCode.MAY_TRY_RECONNECT);
@@ -53,29 +58,27 @@ export class GameRoom extends Room {
     this.setTimestep((deltaTime) => {
       elapsedTime += deltaTime;
 
-      while (elapsedTime >= this.fixedTimeStep) {
-        elapsedTime -= this.fixedTimeStep;
+      while (elapsedTime >= FixedTimestep) {
+        elapsedTime -= FixedTimestep;
         this.fixedTick();
       }
     });
   }
 
   fixedTick() {
-    const velocity = 2;
-
     this.state.players.forEach((player) => {
       let input = player.inputQueue.shift();
 
       while (input != undefined) {
         if (input.left) {
-          player.x -= velocity;
+          player.x -= Velocity;
         } else if (input.right) {
-          player.x += velocity;
+          player.x += Velocity;
         }
         if (input.up) {
-          player.y -= velocity;
+          player.y -= Velocity;
         } else if (input.down) {
-          player.y += velocity;
+          player.y += Velocity;
         }
 
         player.tick = input.tick;

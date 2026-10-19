@@ -1,5 +1,6 @@
 import { AUTO, Game } from "phaser";
 import { GameScene } from "@client/GameScene";
+import { GameMapWidth, GameMapHeight } from "@common/constants";
 
 const config: Phaser.Types.Core.GameConfig = {
   type: AUTO,
@@ -9,8 +10,8 @@ const config: Phaser.Types.Core.GameConfig = {
     forceSetTimeOut: true,
     smoothStep: false,
   },
-  width: 1024,
-  height: 768,
+  width: GameMapWidth,
+  height: GameMapHeight,
   backgroundColor: "#028af8",
   pixelArt: true,
   physics: {

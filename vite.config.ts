@@ -32,6 +32,7 @@ export default defineConfig({
     alias: {
       "@client": path.resolve(__dirname, "src/client"),
       "@server": path.resolve(__dirname, "src/server"),
+      "@common": path.resolve(__dirname, "src/common"),
     },
   },
   environments: {
