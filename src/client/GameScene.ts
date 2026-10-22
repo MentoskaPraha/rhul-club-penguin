@@ -30,6 +30,11 @@ export class GameScene extends Phaser.Scene {
     down: false,
     tick: NaN,
   };
+  autoMovePayload = {
+    moving: false,
+    x: NaN,
+    y: NaN,
+  };
 
   elapsedTime = 0;
   currentTick: number = 0;
@@ -39,8 +44,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   async create() {
-    // initialise movement keys
+    // initialise input for movement
     this.cursorKeys = this.input.keyboard?.createCursorKeys();
+    this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      if (!this.currentPlayer) return;
+      this.autoMovePayload.x = Math.floor(pointer.worldX);
+      this.autoMovePayload.y = Math.floor(pointer.worldY);
+      this.autoMovePayload.moving = true;
+    });
 
     // setup the camera
     this.cameras.main.setBounds(0, 0, GameMapWidth, GameMapHeight);
@@ -70,7 +81,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     callbacks.onRemove("players", (_, sessionId) => {
-      const entity = this.playerEntities[sessionId].entity;
+      const entity = this.playerEntities[sessionId]?.entity;
       if (entity) {
         entity.destroy();
         delete this.playerEntities[sessionId];
@@ -100,9 +111,7 @@ export class GameScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     // Skip loop if not connected yet.
-    if (!this.currentPlayer) {
-      return;
-    }
+    if (!this.currentPlayer) return;
 
     this.elapsedTime += delta;
     while (this.elapsedTime >= FixedTimestep) {
@@ -114,26 +123,41 @@ export class GameScene extends Phaser.Scene {
   fixedTick() {
     this.currentTick++;
 
-    // If the cursor keys are available, run their input logic
-    if (this.cursorKeys != undefined) {
+    // If the player has clicked somewhere, and should be moving there, move them.
+    if (this.autoMovePayload.moving) {
+      const diffX = this.currentPlayer.x - this.autoMovePayload.x;
+      const diffY = this.currentPlayer.y - this.autoMovePayload.y;
+      const arrivedX = Math.abs(diffX) <= Velocity;
+      const arrivedY = Math.abs(diffY) <= Velocity;
+
+      this.inputPayload.left = diffX > 0 && !arrivedX;
+      this.inputPayload.right = diffX < 0 && !arrivedX;
+      this.inputPayload.up = diffY > 0 && !arrivedY;
+      this.inputPayload.down = diffY < 0 && !arrivedY;
+
+      // stop moving if reached target position
+      if (arrivedX && arrivedY) this.autoMovePayload.moving = false;
+    } else if (this.cursorKeys != undefined) {
       this.inputPayload.left = this.cursorKeys.left.isDown;
       this.inputPayload.right = this.cursorKeys.right.isDown;
       this.inputPayload.up = this.cursorKeys.up.isDown;
       this.inputPayload.down = this.cursorKeys.down.isDown;
-      this.inputPayload.tick = this.currentTick;
-      this.room.send("move", this.inputPayload);
+    }
 
-      if (this.inputPayload.left) {
-        this.currentPlayer.x -= Velocity;
-      } else if (this.inputPayload.right) {
-        this.currentPlayer.x += Velocity;
-      }
+    // send the input to the server
+    this.inputPayload.tick = this.currentTick;
+    this.room.send("move", this.inputPayload);
 
-      if (this.inputPayload.up) {
-        this.currentPlayer.y -= Velocity;
-      } else if (this.inputPayload.down) {
-        this.currentPlayer.y += Velocity;
-      }
+    // move the player
+    if (this.inputPayload.left) {
+      this.currentPlayer.x -= Velocity;
+    } else if (this.inputPayload.right) {
+      this.currentPlayer.x += Velocity;
+    }
+    if (this.inputPayload.up) {
+      this.currentPlayer.y -= Velocity;
+    } else if (this.inputPayload.down) {
+      this.currentPlayer.y += Velocity;
     }
 
     // Update the position of all players
