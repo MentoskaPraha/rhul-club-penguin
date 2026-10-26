@@ -6,13 +6,13 @@ Original idea by cattywat from the RHUL CompSoc Discord.
 
 ## Requirements
 
-1. [ ] Users connect and join the game through the browser.
+1. [x] Users connect and join the game through the browser.
 1. [ ] User authentication.
 1. [ ] User data persists.
-1. [ ] All users should be able to see the actions of other users.
-1. [ ] Users can move around the map.
-1. [ ] Users can go into different buildings and areas on the map
-1. [ ] The map is the RHUL Egham campus
+1. [x] All users should be able to see the actions of other users.
+1. [x] Users can move around the map.
+1. [ ] Users can go into different buildings and areas on the map.
+1. [ ] The map is the RHUL Egham campus.
 1. [ ] Users can own a room in any of the dorm buildings.
 1. [ ] Users can customise their rooms.
 1. [ ] Users have coins.
