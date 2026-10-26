@@ -1,29 +1,12 @@
-import { Room, Client, CloseCode } from "colyseus";
+import { Room, Client } from "colyseus";
 import { schema, SchemaType, t } from "@colyseus/schema";
-import {
-  FixedTimestep,
-  Velocity,
-  GameMapWidth,
-  GameMapHeight,
-} from "@common/constants";
-
-export interface InputData {
-  left: boolean;
-  right: boolean;
-  up: boolean;
-  down: boolean;
-  tick: number;
-}
+import { GameMapWidth, GameMapHeight } from "@common/constants";
+import { applyInput, MoveInput } from "@common/GameInput";
 
 export const Player = schema(
   {
     x: t.number(),
     y: t.number(),
-    tick: t.number(),
-    inputQueue: t
-      .ref(Array<InputData>)
-      .noSync()
-      .default(() => []),
   },
   "Player",
 );
@@ -42,48 +25,16 @@ export type GameRoomState = SchemaType<typeof GameRoomState>;
 export class GameRoom extends Room {
   state = new GameRoomState();
 
-  messages = {
-    move: (client: Client, input: InputData) => {
-      const player = this.state.players.get(client.sessionId);
-      if (player == undefined) {
-        client.leave(CloseCode.MAY_TRY_RECONNECT);
-        return;
-      }
-      player.inputQueue.push(input);
-    },
-  };
+  inputs = this.defineInput(MoveInput, { bufferMaxSize: 64 });
 
   onCreate() {
-    let elapsedTime = 0;
-    this.setTimestep((deltaTime) => {
-      elapsedTime += deltaTime;
-
-      while (elapsedTime >= FixedTimestep) {
-        elapsedTime -= FixedTimestep;
-        this.fixedTick();
-      }
-    });
+    this.setFixedTimestep(() => this.step(), 30);
   }
 
-  fixedTick() {
-    this.state.players.forEach((player) => {
-      let input = player.inputQueue.shift();
-
-      while (input != undefined) {
-        if (input.left) {
-          player.x -= Velocity;
-        } else if (input.right) {
-          player.x += Velocity;
-        }
-        if (input.up) {
-          player.y -= Velocity;
-        } else if (input.down) {
-          player.y += Velocity;
-        }
-
-        player.tick = input.tick;
-        input = player.inputQueue.shift();
-      }
+  step() {
+    this.state.players.forEach((player, sessionId) => {
+      const cmd = this.inputs.get(sessionId).next();
+      if (cmd) applyInput(player, cmd);
     });
   }
 

@@ -1,36 +1,34 @@
 import * as Phaser from "phaser";
-import { Room, Client, Callbacks } from "@colyseus/sdk";
 import {
-  FixedTimestep,
-  GameMapHeight,
-  GameMapWidth,
-  Velocity,
-} from "@common/constants";
+  Room,
+  Client,
+  Callbacks,
+  Predict,
+  InputHandle,
+  Reconciler,
+} from "@colyseus/sdk";
+import { GameMapHeight, GameMapWidth, Velocity } from "@common/constants";
 import type server from "@server/index";
-import type { InputData, GameRoom, GameRoomState } from "@server/GameRoom";
+import type { GameRoom, GameRoomState, Player } from "@server/GameRoom";
+import { applyInput, MoveInput } from "@common/GameInput";
 
 export class GameScene extends Phaser.Scene {
   client = new Client<typeof server>(window.location.origin);
   room: Room<GameRoom, GameRoomState>;
 
-  currentPlayer: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
+  predict: Predict;
+  moveInput: InputHandle<MoveInput>;
+  currentPlayer: Reconciler<Player>;
+
   playerEntities: {
     [sessionId: string]: {
-      entity: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
-      serverX: number;
-      serverY: number;
+      entity: Phaser.GameObjects.Image;
+      player: Player;
     };
   } = {};
 
   cursorKeys: Phaser.Types.Input.Keyboard.CursorKeys | undefined;
-  inputPayload: InputData = {
-    left: false,
-    right: false,
-    up: false,
-    down: false,
-    tick: NaN,
-  };
-  autoMovePayload = {
+  autoMoveState = {
     moving: false,
     x: NaN,
     y: NaN,
@@ -48,9 +46,9 @@ export class GameScene extends Phaser.Scene {
     this.cursorKeys = this.input.keyboard?.createCursorKeys();
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
       if (!this.currentPlayer) return;
-      this.autoMovePayload.x = Math.floor(pointer.worldX);
-      this.autoMovePayload.y = Math.floor(pointer.worldY);
-      this.autoMovePayload.moving = true;
+      this.autoMoveState.x = Math.floor(pointer.worldX);
+      this.autoMoveState.y = Math.floor(pointer.worldY);
+      this.autoMoveState.moving = true;
     });
 
     // setup the camera
@@ -58,24 +56,32 @@ export class GameScene extends Phaser.Scene {
 
     // connect with the room
     await this.connect();
+    if (!this.room) return;
+
+    // setup input and prediction
+    this.moveInput = this.room.input({ type: MoveInput });
+    if (this.moveInput.tickRate == undefined) {
+      throw new Error("Server didn't advertise a fixed tickrate!");
+    }
+
+    this.predict = Predict.get(this.room, { mode: "lerp", delay: 100 });
+    this.predict.attachAll("players", { mode: "lerp", fields: ["x", "y"] });
 
     // listen to server events
     const callbacks = Callbacks.get(this.room);
 
     callbacks.onAdd("players", (player, sessionId) => {
-      const entity = this.physics.add.image(player.x, player.y, "ship_0001");
-      const playerEntity = {
+      const entity = this.add.image(player.x, player.y, "ship_0001");
+      const playerEntry = {
         entity: entity,
-        serverX: player.x,
-        serverY: player.y,
+        player: player,
       };
-      this.playerEntities[sessionId] = playerEntity;
+      this.playerEntities[sessionId] = playerEntry;
       if (sessionId == this.room.sessionId) {
-        this.currentPlayer = entity;
-      } else {
-        callbacks.onChange(player, () => {
-          playerEntity.serverX = player.x;
-          playerEntity.serverY = player.y;
+        this.currentPlayer = this.predict.reconciler(player, {
+          input: this.moveInput,
+          step: (_ctx, state, cmd) => applyInput(state, cmd),
+          smoothMs: 65,
         });
       }
     });
@@ -109,66 +115,45 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  update(_time: number, delta: number): void {
+  update(): void {
     // Skip loop if not connected yet.
     if (!this.currentPlayer) return;
 
-    this.elapsedTime += delta;
-    while (this.elapsedTime >= FixedTimestep) {
-      this.elapsedTime -= FixedTimestep;
-      this.fixedTick();
+    const steps = this.predict.tick();
+    for (let i = 0; i < steps; i++) {
+      this.stageInput();
+      this.moveInput.send();
+    }
+
+    for (const sessionId in this.playerEntities) {
+      const { entity, player } = this.playerEntities[sessionId];
+      entity.setPosition(
+        this.predict.value(player, "x"),
+        this.predict.value(player, "y"),
+      );
     }
   }
 
-  fixedTick() {
-    this.currentTick++;
+  stageInput() {
+    const data = this.moveInput.data;
 
-    // If the player has clicked somewhere, and should be moving there, move them.
-    if (this.autoMovePayload.moving) {
-      const diffX = this.currentPlayer.x - this.autoMovePayload.x;
-      const diffY = this.currentPlayer.y - this.autoMovePayload.y;
+    if (this.autoMoveState.moving) {
+      const diffX = this.currentPlayer.state.x - this.autoMoveState.x;
+      const diffY = this.currentPlayer.state.y - this.autoMoveState.y;
       const arrivedX = Math.abs(diffX) <= Velocity;
       const arrivedY = Math.abs(diffY) <= Velocity;
 
-      this.inputPayload.left = diffX > 0 && !arrivedX;
-      this.inputPayload.right = diffX < 0 && !arrivedX;
-      this.inputPayload.up = diffY > 0 && !arrivedY;
-      this.inputPayload.down = diffY < 0 && !arrivedY;
+      data.left = diffX > 0 && !arrivedX;
+      data.right = diffX < 0 && !arrivedX;
+      data.up = diffY > 0 && !arrivedY;
+      data.down = diffY < 0 && !arrivedY;
 
-      // stop moving if reached target position
-      if (arrivedX && arrivedY) this.autoMovePayload.moving = false;
-    } else if (this.cursorKeys != undefined) {
-      this.inputPayload.left = this.cursorKeys.left.isDown;
-      this.inputPayload.right = this.cursorKeys.right.isDown;
-      this.inputPayload.up = this.cursorKeys.up.isDown;
-      this.inputPayload.down = this.cursorKeys.down.isDown;
-    }
-
-    // send the input to the server
-    this.inputPayload.tick = this.currentTick;
-    this.room.send("move", this.inputPayload);
-
-    // move the player
-    if (this.inputPayload.left) {
-      this.currentPlayer.x -= Velocity;
-    } else if (this.inputPayload.right) {
-      this.currentPlayer.x += Velocity;
-    }
-    if (this.inputPayload.up) {
-      this.currentPlayer.y -= Velocity;
-    } else if (this.inputPayload.down) {
-      this.currentPlayer.y += Velocity;
-    }
-
-    // Update the position of all players
-    for (const sessionId in this.playerEntities) {
-      if (sessionId == this.room.sessionId) {
-        continue;
-      }
-
-      const { entity, serverX, serverY } = this.playerEntities[sessionId];
-      entity.x = Phaser.Math.Linear(entity.x, serverX, 0.2);
-      entity.y = Phaser.Math.Linear(entity.y, serverY, 0.2);
+      if (arrivedX && arrivedY) this.autoMoveState.moving = false;
+    } else if (this.cursorKeys) {
+      data.left = this.cursorKeys.left.isDown;
+      data.right = this.cursorKeys.right.isDown;
+      data.up = this.cursorKeys.up.isDown;
+      data.down = this.cursorKeys.down.isDown;
     }
   }
 }
