@@ -16,7 +16,7 @@ export class GameScene extends Phaser.Scene {
   client = new Client<typeof server>(window.location.origin);
   room: Room<GameRoom, GameRoomState>;
 
-  predict: Predict;
+  predict: Predict<GameRoomState>;
   moveInput: InputHandle<MoveInput>;
   currentPlayer: Reconciler<Player>;
 
@@ -33,9 +33,6 @@ export class GameScene extends Phaser.Scene {
     x: NaN,
     y: NaN,
   };
-
-  elapsedTime = 0;
-  currentTick: number = 0;
 
   constructor() {
     super({ key: "game" });
@@ -72,11 +69,11 @@ export class GameScene extends Phaser.Scene {
 
     callbacks.onAdd("players", (player, sessionId) => {
       const entity = this.add.image(player.x, player.y, "ship_0001");
-      const playerEntry = {
+      const playerEntity = {
         entity: entity,
         player: player,
       };
-      this.playerEntities[sessionId] = playerEntry;
+      this.playerEntities[sessionId] = playerEntity;
       if (sessionId == this.room.sessionId) {
         this.currentPlayer = this.predict.reconciler(player, {
           input: this.moveInput,
