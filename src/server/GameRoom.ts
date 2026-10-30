@@ -1,4 +1,4 @@
-import { Room, Client } from "colyseus";
+import { Room, Client, logger } from "colyseus";
 import { schema, SchemaType, t } from "@colyseus/schema";
 import { GameMapWidth, GameMapHeight } from "@common/constants";
 import { applyInput, MoveInput } from "@common/GameInput";
@@ -29,6 +29,7 @@ export class GameRoom extends Room {
 
   onCreate() {
     this.setFixedTimestep(() => this.step(), 30);
+    logger.info(`GameRoom(${this.roomId}) created.`);
   }
 
   step() {
@@ -39,24 +40,27 @@ export class GameRoom extends Room {
   }
 
   onJoin(client: Client) {
-    console.log("Joined!", {
-      roomId: this.roomId,
-      sessionId: client.sessionId,
-    });
+    logger.debug(
+      `Client(${client.sessionId}) is joining GameRoom(${this.roomId})...`,
+    );
 
     const player = new Player();
     player.x = Math.random() * this.state.mapWidth;
     player.y = Math.random() * this.state.mapHeight;
 
     this.state.players.set(client.sessionId, player);
+    logger.info(`Client(${client.sessionId}) joined GameRoom(${this.roomId}).`);
   }
 
   onLeave(client: Client) {
-    console.log("Left!", { roomId: this.roomId, sessionId: client.sessionId });
+    logger.debug(
+      `Client(${client.sessionId}) is leaving GameRoom(${this.roomId})...`,
+    );
     this.state.players.delete(client.sessionId);
+    logger.info(`Client(${client.sessionId}) joined GameRoom(${this.roomId}).`);
   }
 
   onDispose() {
-    console.log("Disposing room", this.roomId, "...");
+    logger.info(`GameRoom(${this.roomId}) disposed.`);
   }
 }

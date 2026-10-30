@@ -21,7 +21,9 @@
     "@colyseus/schema": "^5.0.42",
     "@colyseus/tools": "^0.18.10",
     "colyseus": "^0.18.10",
-    "express": "^5.3.0"
+    "express": "^5.3.0",
+    "pino": "^10.4.0",
+    "pino-pretty": "^13.2.0"
   },
   "devDependencies": {
     "@colyseus/sdk": "^0.18.6",
